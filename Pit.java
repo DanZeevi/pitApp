@@ -7,7 +7,6 @@ import android.graphics.Paint;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
 import android.support.annotation.NonNull;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -109,7 +108,7 @@ class Pit extends ViewGroup {
         final int left = (int) pointView.myLeft;
         final int top = (int) pointView.myTop;
         final int right = (int) pointView.myRight;
-        final int bottom = (int) (pointView.myBottom);
+        final int bottom = (int) pointView.myBottom;
         // layout point on screen
         pointView.layout(left, top, right, bottom); //right / 2, top, right, bottom / 2);
     }
@@ -157,8 +156,8 @@ class Pit extends ViewGroup {
 
     class PointView extends View implements Comparable<PointView> {
 
-        private ShapeDrawable mCircle;
-        private final int RADIUS = 20;
+        private ShapeDrawable circle;
+        private final int RADIUS = 15;
 
         // parent view need to init values:
         // save both view corners (left top right bottom) and circle center (x, y)
@@ -169,42 +168,37 @@ class Pit extends ViewGroup {
         }
 
         public void moveTo(float x, float y) {
-            // move view on screen
-            setLeft((int) x - RADIUS);
-            setTop((int) y - RADIUS);
-            setRight(getLeft() + 2 * RADIUS);
-            setBottom(getTop() + 2 * RADIUS);
             // save new view coordinates
-            setMyXY(x, y);
+            setMyXY(x, y-20);
+            // move view on screen
+            setLeft((int)myLeft);
+            setTop((int) myTop);
+            setRight((int) myRight);
+            setBottom((int) myBottom);
         }
 
         protected void changeColor() {
-            mCircle.getPaint().setColor(
-                    mCircle.getPaint().getColor() == Color.RED ? Color.BLUE : Color.RED);
+            circle.getPaint().setColor(
+                    circle.getPaint().getColor() == Color.RED ? Color.BLUE : Color.RED);
             invalidate();
         }
 
         public void init(float x, float y) {
             // initialize view params: left and top point in view group
             // and initialize circle shape
-
-            myX = x;
-            myY = y;
-            myLeft = x - RADIUS;
-            myTop = y - RADIUS;
-            myRight = x + RADIUS;
-            myBottom = y + RADIUS;
+            // save coordinates
+            setMyXY(x, y);
             // init circle
-            mCircle = new ShapeDrawable(new OvalShape());
+            circle = new ShapeDrawable(new OvalShape());
             // set circle color
-            mCircle.getPaint().setColor(Color.BLUE);
+            circle.getPaint().setColor(Color.BLUE);
             // set bounds of circle relative to the point view itself
-            mCircle.setBounds(0, 0, 0 + 2 * RADIUS, 0 + 2 * RADIUS);
+            circle.setBounds(0, 0, 0 + 2 * RADIUS, 0 + 2 * RADIUS);
         }
 
         protected void onDraw(Canvas canvas) {
             // draw single point
-            mCircle.draw(canvas);
+            circle.draw(canvas);
         }
 
         private void setMyXY(float x, float y) {
@@ -216,11 +210,6 @@ class Pit extends ViewGroup {
             this.myRight = x + RADIUS;
             this.myTop = y - RADIUS;
             this.myBottom = y + RADIUS;
-        }
-
-        @Override
-        public boolean performClick() {
-            return super.performClick();
         }
 
         @Override
@@ -238,35 +227,41 @@ class Pit extends ViewGroup {
             }
             return super.equals(obj);
         }
+
+        @Override
+        public boolean performClick() {
+            // must implement to allow onTouchListener
+            return super.performClick();
+        }
     }
 
-        private final OnTouchListener mTouchListener = new OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                // get touch x,y and point
-                final float x = motionEvent.getRawX();
-                final float y = motionEvent.getRawY();
-                final PointView pointView = (PointView) view;
+    private final OnTouchListener mTouchListener = new OnTouchListener() {
+        @Override
+        public boolean onTouch(View view, MotionEvent motionEvent) {
+            // get touch x,y and point
+            final float x = motionEvent.getRawX();
+            final float y = motionEvent.getRawY();
+            final PointView pointView = (PointView) view;
 
-                switch (motionEvent.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        // point touch- change color for indication
-                        pointView.changeColor();
-                        return true;
-                    case MotionEvent.ACTION_MOVE:
-                        // move point to new x,y
-                        pointView.moveTo(x, y);
-                        // sort point list by x location
-                        Collections.sort(pointList);
-                        // render on screen
-                        postInvalidate();
-                        return true;
-                    case MotionEvent.ACTION_UP:
-                        // point touch stop- change color back for indication
-                        pointView.changeColor();
-                        return true;
-                }
-                return false;
+            switch (motionEvent.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    // point touch- change color for indication
+                    pointView.changeColor();
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    // move point to new x,y
+                    pointView.moveTo(x, y);
+                    // sort point list by x location
+                    Collections.sort(pointList);
+                    // render on screen
+                    invalidate();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    // point touch stop- change color back for indication
+                    pointView.changeColor();
+                    return true;
             }
-        };
-    }
+            return false;
+        }
+    };
+}
