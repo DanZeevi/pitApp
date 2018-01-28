@@ -3,7 +3,7 @@
 Solution for PIT (canvas control points in android).
 
 Pit is a direct extension to ViewGroup.
-It shows the x and y axis, five initial random points connected by edges according to their location along the x-axis, and an add buttonץ New points are added at (0,0).
+It shows the x and y axis, five initial random points connected by edges according to their location along the x-axis, and an add point button. New points are added at (0,0).
 
 Each point is of class PointView, extending View.
 It is given coordinates on the screen, assigned an onTouchListener, and added to the Point sorted List.
@@ -12,7 +12,9 @@ Every PointView draws a small circle of type ShapeDrawable within its borders us
 Every change on screen (movement or point addition) resolves in ordering of the points list using Collection.sort(list) method, and the implemented Comparable interface.
 The comparison is done by overriding compareTo(object), in which the x coordinate is evaluated.
 
-Note:
-  Sorting the array might be memory consuming. There could be anoter solution to sort the list while a point is moving.
+Addition:
+Sorting the point list upon every movement (as implemented by TouchListener class) is redundant.
+The EfficientTouchListener will sort the list only if necessary, using isSorted() method, checking if the movement made requires for the list to be sorted. Log calls will show these changes.
+Note: The list will be sorted ANYWAY  upon point addition.
 
 Enjoy!
