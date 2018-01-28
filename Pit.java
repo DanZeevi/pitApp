@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -58,7 +59,7 @@ class Pit extends ViewGroup {
         // initialize point
         PointView pointView = new PointView(context);
         // set on touch listener
-        pointView.setOnTouchListener(mTouchListener);
+        pointView.setOnTouchListener(pointView.mTouchListener);
         // set point x,y
         pointView.init(x, y);
         // add point to list
@@ -156,8 +157,11 @@ class Pit extends ViewGroup {
 
     class PointView extends View implements Comparable<PointView> {
 
-        private ShapeDrawable circle;
+        // fixed circle radius
         private final int RADIUS = 15;
+        private ShapeDrawable circle;
+        private final OnTouchListener mTouchListener;
+
 
         // parent view need to init values:
         // save both view corners (left top right bottom) and circle center (x, y)
@@ -165,13 +169,17 @@ class Pit extends ViewGroup {
 
         public PointView(Context context) {
             super(context);
+            // efficient point on touch listener - will sort only if necessary
+            mTouchListener = new EffiecientTouchListener();
+            // simple point on touch listener - will sort at every change
+            // mTouchListener = new TouchListener();
         }
 
         public void moveTo(float x, float y) {
             // save new view coordinates
-            setMyXY(x, y-20);
+            setMyCoordinates(x, y);
             // move view on screen
-            setLeft((int)myLeft);
+            setLeft((int) myLeft);
             setTop((int) myTop);
             setRight((int) myRight);
             setBottom((int) myBottom);
@@ -184,10 +192,9 @@ class Pit extends ViewGroup {
         }
 
         public void init(float x, float y) {
-            // initialize view params: left and top point in view group
-            // and initialize circle shape
+            // initialize view coordinates and initialize circle shape
             // save coordinates
-            setMyXY(x, y);
+            setMyCoordinates(x, y);
             // init circle
             circle = new ShapeDrawable(new OvalShape());
             // set circle color
@@ -201,7 +208,7 @@ class Pit extends ViewGroup {
             circle.draw(canvas);
         }
 
-        private void setMyXY(float x, float y) {
+        private void setMyCoordinates(float x, float y) {
             // set center x,y
             this.myX = x;
             this.myY = y;
@@ -235,12 +242,14 @@ class Pit extends ViewGroup {
         }
     }
 
-    private final OnTouchListener mTouchListener = new OnTouchListener() {
+    private class TouchListener implements OnTouchListener {
+        // simple touch listener, sorting point list after each change in position
         @Override
         public boolean onTouch(View view, MotionEvent motionEvent) {
             // get touch x,y and point
             final float x = motionEvent.getRawX();
             final float y = motionEvent.getRawY();
+            // get point view object
             final PointView pointView = (PointView) view;
 
             switch (motionEvent.getAction()) {
@@ -251,8 +260,13 @@ class Pit extends ViewGroup {
                 case MotionEvent.ACTION_MOVE:
                     // move point to new x,y
                     pointView.moveTo(x, y);
+
+                    Log.e("before sort", "onTouch: " + pointList.indexOf(pointView));
+
                     // sort point list by x location
                     Collections.sort(pointList);
+                    Log.e("after sort", "onTouch: " + pointList.indexOf(pointView));
+
                     // render on screen
                     invalidate();
                     return true;
@@ -263,5 +277,63 @@ class Pit extends ViewGroup {
             }
             return false;
         }
-    };
+    }
+
+    private class EffiecientTouchListener implements OnTouchListener {
+
+        @Override
+        public boolean onTouch(View view, MotionEvent motionEvent) {
+            // get touch x,y and point
+            final float x = motionEvent.getRawX();
+            final float y = motionEvent.getRawY();
+            // get point view object
+            final PointView pointView = (PointView) view;
+
+            switch (motionEvent.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    // point touch- change color for indication
+                    pointView.changeColor();
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    // move point to new x,y
+                    pointView.moveTo(x, y);
+                    // check if list needs sorting:
+                    if (!isSorted(pointView)) {
+                        Log.e("before sort", "onTouch: " + pointList.indexOf(pointView));
+
+                        // sort point list by x location
+                        Collections.sort(pointList);
+                        Log.e("after sort", "onTouch: " + pointList.indexOf(pointView));
+                    }
+                    // render on screen
+                    invalidate();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    // point touch stop- change color back for indication
+                    pointView.changeColor();
+                    return true;
+            }
+            return false;
+        }
+
+        private boolean isSorted(PointView pointView) {
+            // check if point view object located correctly in list
+            // by ascending myX value
+            // get point index in list
+            final int viewIndex = pointList.indexOf(pointView);
+            // check list size, list of size 1 does not need sorting
+            if (pointList.size() == 1) {
+                return true;
+            }
+            // if previous point in list is bigger (only if not first in list)
+            if (viewIndex > 0 && pointView.compareTo(pointList.get(viewIndex - 1)) < 0) {
+                return false;
+            }
+            // if next point in list is smaller (only if not last in list)
+            if (viewIndex + 1 < pointList.size() && pointView.compareTo(pointList.get(viewIndex + 1)) > 0) {
+                return false;
+            }
+            return true;
+        }
+    }
 }
