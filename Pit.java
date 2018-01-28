@@ -170,7 +170,7 @@ class Pit extends ViewGroup {
         public PointView(Context context) {
             super(context);
             // efficient point on touch listener - will sort only if necessary
-            mTouchListener = new EffiecientTouchListener();
+            mTouchListener = new EfficientTouchListener();
             // simple point on touch listener - will sort at every change
             // mTouchListener = new TouchListener();
         }
@@ -279,8 +279,9 @@ class Pit extends ViewGroup {
         }
     }
 
-    private class EffiecientTouchListener implements OnTouchListener {
-
+    private class EfficientTouchListener implements OnTouchListener {
+        // a more efficient touch listener
+        // will call to sort point list only if neede
         @Override
         public boolean onTouch(View view, MotionEvent motionEvent) {
             // get touch x,y and point
